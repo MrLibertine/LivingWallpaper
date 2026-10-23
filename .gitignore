@@ -1,0 +1,19 @@
+*.iml
+
+.gradle/
+local.properties
+/.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+*.apk
+*.aab
+
+# 调试/抓取产生的临时文件
+__pycache__/
+*.pyc
+docs/_*.xml
+docs/_dump*.xml

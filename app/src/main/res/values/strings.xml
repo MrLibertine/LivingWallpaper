@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">灵境壁纸</string>
+
+    <string name="tab_preview">预览</string>
+    <string name="tab_scenes">场景库</string>
+    <string name="tab_parameters">参数</string>
+    <string name="tab_ai">AI 创造</string>
+    <string name="tab_performance">性能</string>
+
+    <string name="preview_caption">OpenGL ES 3.0 · GPU 逐帧计算（非静态图片、非视频）</string>
+
+    <string name="entry_set_wallpaper">设置为壁纸</string>
+    <string name="msg_wallpaper_picker_opened">已打开系统动态壁纸设置界面，请在系统界面中确认应用</string>
+    <string name="msg_wallpaper_picker_failed">当前设备没有可用的动态壁纸设置界面（%1$s）</string>
+
+    <string name="section_appearance">天空与天气</string>
+    <string name="section_motion">运动与性能</string>
+
+    <string name="scene_forest_night">Forest Night 森林雨夜</string>
+    <string name="scene_forest_night_desc">夜空渐变、远山、多层森林景深、雨滴、萤火虫、风吹树木、视差</string>
+    <string name="scene_aurora_lake">Aurora Lake 极光雪山湖</string>
+    <string name="scene_aurora_lake_desc">极光夜空、雪山剪影、湖面倒影、星点闪烁、飘雪、视差</string>
+    <string name="scene_star_valley">Star Valley 星空山谷</string>
+    <string name="scene_star_valley_desc">夜空、山脉、星星闪烁、流星、缓慢云层</string>
+    <string name="scene_applied">已切换到 %1$s</string>
+
+    <string name="param_rain">雨量</string>
+    <string name="param_wind">风速</string>
+    <string name="param_animation_speed">动画速度</string>
+    <string name="param_light">光照强度</string>
+    <string name="param_parallax">视差强度</string>
+    <string name="param_firefly">萤火虫密度</string>
+    <string name="param_snow">飘雪密度</string>
+<string name="param_meteor">流星密度</string>
+    <string name="param_off">已关闭</string>
+
+    <string name="label_weather">天气</string>
+    <string name="weather_clear">晴</string>
+    <string name="weather_rain">雨</string>
+    <string name="weather_cloudy">多云</string>
+
+    <string name="label_sky_color">天空颜色</string>
+    <string name="label_target_fps">帧率档位</string>
+    <string name="fps_value">%1$d FPS</string>
+
+    <string name="build_application_id">applicationId：%1$s</string>
+    <string name="build_version">版本：%1$s（versionCode %2$d）</string>
+    <string name="build_type">构建类型：%1$s</string>
+    <string name="build_sdk">minSdk %1$d · targetSdk %2$d · compileSdk %3$d</string>
+    <string name="build_persisted">配置持久化：DataStore（修改后系统壁纸同步生效）</string>
+
+    <string name="ai_mode_label">当前模式：%1$s</string>
+    <string name="ai_input_label">用一句话描述你想要的壁纸</string>
+    <string name="ai_input_placeholder">例如：切换到星空山谷，雨小一点，天空偏紫色</string>
+    <string name="ai_generate">生成</string>
+    <string name="ai_generating">解析中…</string>
+    <string name="ai_result_title">解析结果</string>
+    <string name="ai_elapsed">耗时：%1$d ms（本机实测）</string>
+    <string name="ai_no_change">该指令未改变任何参数</string>
+    <string name="ai_apply">应用并保存</string>
+    <string name="ai_discard">放弃</string>
+    <string name="ai_error_title">无法应用该指令</string>
+    <string name="ai_examples">示例指令</string>
+    <string name="ai_example_1">雨大一点</string>
+    <string name="ai_example_2">切换到极光雪山湖，风速最大</string>
+    <string name="ai_example_3">天空偏紫色，动画慢一点</string>
+    <string name="ai_example_4">关掉视差，帧率 15</string>
+
+    <string name="perf_level_title">性能档位</string>
+    <string name="perf_level_low">省电</string>
+    <string name="perf_level_medium">均衡</string>
+    <string name="perf_level_high">高画质</string>
+    <string name="perf_level_effect">粒子系数 %1$s · 动态幅度 %2$s · 建议帧率 %3$d</string>
+    <string name="perf_reduce_motion">减少动态效果</string>
+    <string name="perf_reduce_motion_desc">关闭雨滴/萤火虫/流星与风吹摆动，只保留基础画面</string>
+    <string name="perf_parallax_toggle">启用视差</string>
+    <string name="perf_stats_title">实测渲染统计</string>
+    <string name="perf_stats_empty">暂无数据：统计来自当前进程内正在运行的渲染循环，请先打开“预览”页或把本应用设为壁纸</string>
+    <string name="perf_measured_fps">实测帧率：%1$s FPS</string>
+    <string name="perf_frame_time">平均帧间隔：%1$s ms（最近一帧 %2$s ms）</string>
+    <string name="perf_dropped">累计丢帧：%1$d</string>
+    <string name="perf_frames">已渲染帧数：%1$d</string>
+    <string name="perf_memory_title">内存</string>
+    <string name="perf_memory_heap">Java 堆已用：%1$d / %2$d MB</string>
+    <string name="perf_memory_available">系统可用内存：%1$d MB</string>
+    <string name="perf_value_unknown">—</string>
+</resources>

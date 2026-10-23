@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallpaper_label">灵境动态壁纸</string>
+    <string name="wallpaper_description">由 OpenGL ES 实时渲染的动态壁纸（P2：动态渐变预览）</string>
+</resources>

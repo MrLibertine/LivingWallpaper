@@ -1,0 +1,5 @@
+forest-balanced	PSS=298973KB
+aurora-balanced	PSS=282840KB
+star-balanced	PSS=283435KB
+aurora-eco	PSS=284482KB
+aurora-high	PSS=283748KB
