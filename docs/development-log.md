@@ -611,3 +611,45 @@ README 的 Windows 构建示例改为占位符，不再写死本机路径。
 
 校验：8 个脚本 `py_compile` 全部通过，`diag_lake.py` 实际跑通；
 全仓扫描后已无本机用户目录路径、无邮箱、无 UUID、无密钥特征串。
+
+
+## 第 14 轮：修「壁纸运行一段时间后只显示半屏」
+
+现象：设置为壁纸后正常，一段时间后壁纸只出现在屏幕下半部分，上半为纯黑，且不会自行恢复
+（用户截图：1080×2400 上内容从第 1281 行开始）。
+
+**根因（真机日志实测）**：壁纸窗口的尺寸会被系统临时改小。`adb shell wm size 1080x1200`
+复现时，日志出现 `GLRenderer: 绘制尺寸 1080x2400 -> 1080x1200`——高度正好是屏幕的一半。
+
+旧渲染循环只在 `onSurfaceChanged`（或 `resize()`）之后查询一次 EGL 表面尺寸：
+1. 尺寸变小的回调 → 视口跟着变小；
+2. 恢复时 `onSurfaceChanged` 可能缺失，或者在缓冲区几何真正恢复之前到达——
+   此时 `eglQuerySurface` 仍返回旧的较小尺寸，`sizeDirty` 被清掉后就再没有任何触发点，
+   视口永久停在半屏高度；
+3. 由于绘制区域只有下半屏，缓冲区上半部分从未被绘制过，表现为纯黑。
+   这与截图里「内容从屏幕一半处开始」完全一致。
+另外旧代码在 `eglSwapBuffers` 连续失败 3 次后直接结束渲染线程，窗口表面失效时壁纸会
+冻结在最后一帧，同样不可恢复。
+
+**修复**
+
+- `GLRenderer`：绘制尺寸改为**按帧校对**——每 `SIZE_CHECK_INTERVAL_FRAMES`(10) 帧查询一次
+  `eglQuerySurfaceSize()`，尺寸变化立即 `resize()` 场景，不再依赖系统回调；
+  `start()` / `resize()` 传入的尺寸降级为「提示」，只用查询失败时兜底。
+- `GLRenderer`：视口每帧按真实表面尺寸设置，尺寸变化/恢复可见时清一次屏
+  （`glClear` 不受视口限制），杜绝旧缓冲区残留在画面上。
+- `EGLManager.recreateWindowSurface()`（新增）：`eglSwapBuffers` 连续失败即重建窗口表面并
+  继续渲染（保留 EGLDisplay/Context），最多连续重建 6 次；稳定渲染 120 帧后重置重建预算。
+- `LivingWallpaperService.onSurfaceCreated`：先 `stopRendering()`，避免系统先重建 Surface
+  再回调 `onSurfaceDestroyed` 时两个 GL 线程同时向窗口提交。
+
+**验证（Xiaomi 23116PN5BC / Android 16 / 1080×2400）**
+
+- `:app:assembleDebug` 通过；`testDebugUnitTest`（106 用例，0 失败）通过；`:app:lintDebug` 0 issue。
+- `docs/deploy.py` 装包后壁纸仍为本应用，桌面全屏正常出帧。
+- `wm size 1080x1200` → `1080x2400`（含 300ms 快速切回）：日志
+  `绘制尺寸 1080x2400 -> 1080x1200`、`onSurfaceChanged 1080x2400`、
+  `绘制尺寸 1080x1200 -> 1080x2400`，截图首行非黑像素为 0 行（全屏已铺满）。
+- 连续截图差分确认仍在逐帧刷新（天空区域平均差值 0.88/通道，非冻结）。
+- **未验证**：用户实际遇到的触发场景（本人无法复现该路径）——修复方向是让尺寸自愈，
+  不依赖具体触发原因；长时间（数小时）挂机未测。
