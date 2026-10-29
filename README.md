@@ -93,7 +93,7 @@
 
 ```bash
 ./gradlew :app:assembleDebug      # 构建 debug APK
-./gradlew :app:assembleRelease    # 构建 release（未签名）
+./gradlew :app:assembleRelease    # 构建 release APK（已签名，可直接安装）
 ./gradlew testDebugUnitTest       # 全部模块 JVM 单元测试
 ./gradlew :app:lintDebug          # Android Lint
 ```
@@ -110,6 +110,35 @@ gradlew.bat :app:assembleDebug
 当前测试结果：`testDebugUnitTest` 共 **106 个用例，0 失败**；
 `lintDebug` 无 Error（仅剩依赖版本更新提示）。
 真机性能实测见 `docs/performance.md`。
+
+## 发布（GitHub Actions 自动出包）
+
+`.github/workflows/release.yml`：推 `v*` 标签或手动触发（Actions → Release → Run workflow），
+自动跑单测、构建 release APK、生成校验和，并挂到 GitHub Release。
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+产物：
+
+- `living-wallpaper-<版本>.apk` — 可直接安装；`versionName` 取标签（去掉 `v`），
+  `versionCode` = 1000 + run 号（保证覆盖安装能升级）
+- `SHA256SUMS.txt` — 安装前可核对
+
+**签名**：仓库未配置密钥时用 **debug 签名**，装得上但不能上架，日志里会有 warning。
+要用正式签名，在仓库 Secrets 里加：
+
+| Secret | 内容 |
+|---|---|
+| `RELEASE_KEYSTORE_BASE64` | keystore 的 base64（`base64 -w0 release.jks`） |
+| `RELEASE_KEYSTORE_PASSWORD` | keystore 口令 |
+| `RELEASE_KEY_ALIAS` | 密钥别名 |
+| `RELEASE_KEY_PASSWORD` | 密钥口令 |
+
+Release 构建开启了 R8（`isMinifyEnabled` / `isShrinkResources`）：不开时 `classes.dex`
+有 40 MB（Material Icons 全量），APK 43 MB；开启后 2.8 MB。
 
 ## 演示录屏
 
