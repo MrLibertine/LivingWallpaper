@@ -74,8 +74,10 @@ vec3 photo(vec2 uv, float lod) {
  * 横向宽度按 up² 平滑收窄。并集拼圆会在轮廓上留下扇贝状锯齿，
  * 这个写法是解析的，轮廓一定光滑。
  */
-float tearQ(vec2 d, float r) {
-    float tail = 1.60 * r;                       // 尾巴有多长
+float tearQ(vec2 d, float r, float speed) {
+    // 尾巴长度跟着速度走：滑得快时被拉成泪滴，被钉住停下时表面张力把它收回成圆。
+    // 形状不跟着变的话，停住的就是同一张"拉长的泪滴"定格在那儿，像卡帧而不像水停住。
+    float tail = r * (0.55 + 1.05 * speed);
     float yUp = -d.y;                            // 向上为正
     float w;                                     // 该高度上的半宽
     float yn;                                    // 该方向上的归一化长度
@@ -118,19 +120,41 @@ vec4 glassField(vec2 uv) {
         float seed = hash11(lane * 7.3 + fi * 31.7);
         if (seed < 0.42 - 0.10 * uRain + fi * 0.10) continue;   // 稀疏，越细越稀
 
-        // 黏-滑：表面张力先把水钉住，攒够重量再窜一段。
-        // 匀速下滑看着像动画，走走停停才像水。
+        // 黏-滑（stick-slip）：真实玻璃上的水珠被"钉"在某处（水痕、灰尘），
+        // 钉住时完全不动；水越积越多，接触线脱钉，起步后很快到终端速度，
+        // 然后匀速滑，直到撞上下一个钉扎点骤停。
         //
-        // 注意"钉住"只能让速度变小，绝不能让位移往回走：
-        // 直接往位移里减一个正弦（tau - 0.13·sin）会让速度出现负值，
-        // 水珠就会倒着往上爬——雨滴不会这么动。
-        // 这里改成对速度曲线 speed = 1 - A·cos(2πk·tau) 积分：
-        //   travel = tau - A/(2πk)·sin(2πk·tau)
-        // A = 0.88 ≤ 1 保证 speed ≥ 0.12，一次行程里停两次，但只会向下走。
+        // 也就是说它只有"停"和"走"两种状态，没有平滑减速再加速的中间态。
+        // 之前那条 1 - A·cos 的速度曲线是个钟摆：减速是渐进的，
+        // 水滴看着像在犹豫，不像被表面张力按住。
+        //
+        // 这里一趟分两段，每段 = 静止 → 匀加速到终端速度 → 匀速，
+        // 段末速度直接归零（钉住就是骤停）。位移处处单调，不会倒车。
+        // 停顿高度 b 随水道随机：钉扎点固定在玻璃的缺陷上，每条水道位置不同。
         float rate = 0.045 + 0.040 * hash11(lane * 2.3 + fi);
         float tau = fract(uTime * rate + seed * 7.0);
-        float travel = tau - 0.070 * sin(12.566 * tau);
+
+        float b = 0.18 + 0.64 * fract(seed * 5.13 + fi * 0.61);   // 第一次被钉住时的高度
+        float segSpan = tau < b ? b : 1.0 - b;                    // 这一段占整趟的比例
+        float segSec = segSpan / max(rate, 1e-3);                 // 这一段实际要走多久（秒）
+        // 停顿和起步都按"秒"算，不按段长取比例：一趟行程十几秒，
+        // 按比例取的话段长一点就能停三四秒，看着像卡死在那儿。
+        float holdSec = 0.28 + 0.45 * fract(seed * 2.37 + fi * 0.83);   // 钉住 0.28~0.73 秒
+        float hold = clamp(holdSec / segSec, 0.0, 0.5);           // 换算成段内时间比例
+        float ramp = clamp(0.22 / (segSec * (1.0 - hold)), 0.02, 0.5);  // 起步加速约 0.2 秒
+        // 两段的时间按路程长短分配（段内相位 = 已走过的比例），
+        // 否则同样长的两段时间要跑长短不同的两段路，水滴会在下半屏突然变快。
+        float u = tau < b ? tau / b : (tau - b) / (1.0 - b);
+        float v = clamp((u - hold) / (1.0 - hold), 0.0, 1.0);     // 扣掉静止段后的时间
+        float run = v < ramp ? v * v / (2.0 * ramp) : v - 0.5 * ramp;  // 匀加速 → 匀速
+        run /= (1.0 - 0.5 * ramp);                                // 归一化到 0..1
+        float travel = tau < b ? run * b : b + run * (1.0 - b);
         float headY = travel * 1.40 - 0.22;                // 从上方进、下方出
+        // 归一化速度（0 = 被钉住，1 = 终端速度），只用来决定形状被拉多长
+        float speed = v < ramp ? v / ramp : 1.0;
+        // 段末最后 4% 的时间里把尾巴收回来：钉住是瞬间的事，
+        // 但形状若在一帧内从长泪滴缩成圆球，看着像闪了一下（掉帧感）。
+        speed = max(min(speed, (1.0 - u) / 0.04), 0.0);
 
         // 横向极轻的摆动：水顺着玻璃上最小的不平处走
         float swayX = (valueNoise(vec2(uv.y * 2.6 + seed * 9.0, uTime * 0.15)) - 0.5)
@@ -140,7 +164,7 @@ vec4 glassField(vec2 uv) {
         vec2 d = vec2(dx - swayX, uv.y - headY);
 
         // ---- 水头：泪滴 ----
-        float q = tearQ(d, r);
+        float q = tearQ(d, r, speed);
         float cov = smoothstep(1.02, 0.90, q);
         if (cov > 0.001) {
             // 凸透镜：珠内是缩小的一张图（取样点跑得比像素快），
