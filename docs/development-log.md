@@ -962,3 +962,41 @@ float ramp = clamp(0.22 / (segSec * (1.0 - hold)), 0.02, 0.5);  // 起步加速�
 离屏渲染正常；装机后桌面壁纸正常出帧（`docs/shots/device-w19.png`）。
 
 **未验证**：连续观感（停顿 0.5 秒是否仍显长）只能靠肉眼，静态图看不出来。
+
+
+## 第 22 轮：Release 自动出包（GitHub Actions）
+
+目标：不再本地手动打包，推 tag 就让 CI 产出能直接装的 Release 产物。
+
+**先修两个前提问题**
+
+1. **release 一直是 unsigned**：`app-release-unsigned.apk` 真机根本装不上，
+   "Releases 里挂一个装不了的包"没有意义。改为正常签名：
+   仓库 Secrets 注入了 keystore 就用正式签名，否则退回 debug 签名（并打 warning）。
+2. **包体 43 MB**：`classes.dex` 单文件 40 MB，主要是 `material-icons-extended` 全量图标。
+   release 开启 `isMinifyEnabled` + `isShrinkResources` 后降到 **2.8 MB**。
+
+**改动**
+
+- `app/build.gradle.kts`：
+  - `signingConfig` 读环境变量 `LW_KEYSTORE_PATH` 决定是否用正式密钥，缺失则用 debug 签名；
+  - `versionName` / `versionCode` 可由 `LW_VERSION_NAME` / `LW_VERSION_CODE` 覆盖，本地仍用默认值。
+- 新增 `.github/workflows/release.yml`：
+  - 触发：push tag `v*`，或 `workflow_dispatch`（可手填标签）；
+  - 步骤：跑全模块单测 → `assembleRelease` → 重命名产物 + `SHA256SUMS.txt`
+    → 上传 artifact → `gh release create/upload`（已存在的 Release 用 `--clobber` 覆盖）；
+  - `versionCode = 1000 + run_number`，保证覆盖安装时是升级而不是冲突。
+- `README.md`：新增「发布」一节，写明触发方式、产物名与需要的 4 个 Secrets。
+
+**验证（本地）**
+
+| 项目 | 结果 |
+|---|---|
+| `:app:assembleRelease` | BUILD SUCCESSFUL，`app-release.apk` **2.8 MB** |
+| `apksigner verify --print-certs` | 已签名，`CN=Android Debug`（未配置 Secrets 时的预期回退） |
+| `adb install -r` | Success |
+| 启动 / 场景库 / 参数 / AI 规则解析 | 页面正常，AI 解析出「雨量 +0.2」，crash log 为空 |
+| `.github/workflows/release.yml` 语法 | `pyyaml` 解析通过（12 steps） |
+
+**未验证**：GitHub 上的实际运行结果（本地无法执行 Actions），需要推 tag 后看第一次 CI 日志。
+另外 GLSL 仍然只在运行时编译，`assembleRelease` 通过不代表着色器没写错。
