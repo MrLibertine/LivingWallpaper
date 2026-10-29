@@ -653,3 +653,74 @@ README 的 Windows 构建示例改为占位符，不再写死本机路径。
 - 连续截图差分确认仍在逐帧刷新（天空区域平均差值 0.88/通道，非冻结）。
 - **未验证**：用户实际遇到的触发场景（本人无法复现该路径）——修复方向是让尺寸自愈，
   不依赖具体触发原因；长时间（数小时）挂机未测。
+
+
+## 第 15 轮：修「设置了其他壁纸后，应用内『设置为壁纸』打不开任何界面」
+
+现象：先在其他位置换成非本应用的壁纸，回到应用点「设置为壁纸」，只弹出
+「已打开系统动态壁纸设置界面…」提示，实际没有任何界面打开，壁纸也没变。
+
+**根因（真机日志 + 反编译系统 APK 确认）**：应用发的是 `ACTION_CHANGE_LIVE_WALLPAPER`（直连预览），
+它被解析到 `com.android.wallpaper.livepicker/.LiveWallpaperChange`。该 Activity 启动后
+**约 30ms 就自己 finish()**，logcat 给出原因：
+
+```
+W/CHANGE_LIVE_WALLPAPER(24475): No permission to change wall paper
+```
+
+把系统 APK（`/system/priv-app/LiveWallpapersPicker`）拉下来用 `dexdump -d` 看
+`LiveWallpaperChange.init()` / `withoutChangePermission()` 的字节码，门槛只有两道：
+
+1. 目标壁纸包是**系统应用** → 直接放行；
+2. 否则查 **MIUI 私有 app-op `10045`**：`checkOpNoThrow(10045, uid, pkg) != MODE_ALLOWED`
+   就认为「没有权限」，打印上面那行日志并 `finish()`。
+
+而 `dumpsys appops` 显示本应用（以及 QQ、微信）的 `MIUIOP(10045)` 都是 `ignore`——
+即 MIUI 对第三方应用默认关闭直连预览。与传参无关（`am start --ecn` 传真 `ComponentName`
+同样失败）；直接拉起 `LiveWallpaperPreview` 也不行，它**未导出**
+（`SecurityException: not exported from uid 10091`）。
+而 `startActivity` 不抛异常，旧代码据此认为「已打开」，提示与事实相反。
+
+实测把该 app-op 改成 `allow` 后，同一个 Intent 就能停在预览页并正常渲染本应用场景，
+说明这就是唯一那道门；但这个 op 会被系统重置回 `ignore`（装包/进程重启后失效），
+第三方应用无法自己拿到，所以「跳过列表直达预览」在这台机器上做不到。
+
+**中间尝试过、最终放弃的方案**：直连预览优先 + 700ms 内返回判定「被 ROM 秒退」再自动
+兜底到列表。实测可行（点按钮 → 直连页 12:59:35.651 启动、.678 被秒退、.702 自动开列表，
+全程 51ms），但本机永远走兜底，等于凭空多一层时序判断和一次 `ActivityResult` 依赖，
+代码复杂度换不来任何体验收益，按"能用最简单的方式达成同一效果"的原则回退。
+
+**修复**（`PreviewScreen`，最终版）
+
+- 入口固定为**列表直达**：`ACTION_LIVE_WALLPAPER_CHOOSER` → 失败再退
+  `Intent.ACTION_SET_WALLPAPER`，全部失败才提示错误。不再尝试直连预览。
+- 按钮下方加一行常驻说明，说明"下一步在列表里选哪一项"，避免用户看到
+  小米画报/支付宝/QQ 的列表时以为点错了：
+  `动态壁纸须由系统界面确认，下一步在列表中选择「%1$s」→ 设置壁纸`，
+  名称由 `PackageManager` 读服务 label（`灵境动态壁纸`），不与应用名混淆。
+
+**验证（Xiaomi 23116PN5BC / Android 16）**
+
+- 点「设置为壁纸」→ 系统「动态壁纸」列表立即打开
+  （`topResumedActivity=…/.LiveWallpaperActivity`，本应用条目在第一位）。
+- 列表 → 「灵境动态壁纸」→ 预览页正常渲染本应用场景 → 「设置壁纸」→「主屏幕」→
+  `dumpsys wallpaper` 的 `mWallpaperComponent` 为本应用服务，回桌面壁纸正常显示。
+- 截图确认按钮下方的提示文案排版正常。
+- `:app:assembleDebug` 通过；`testDebugUnitTest` 106 用例 0 失败；`:app:lintDebug` 0 issue。
+
+### 附：为什么"点一下直接进预览页"在这台机器上做不到（已逐条排除）
+
+| 尝试 | 结果 |
+|---|---|
+| `ACTION_CHANGE_LIVE_WALLPAPER` 直连预览 | 被 `MIUIOP(10045)` 拦下秒退；手动 `cmd appops set ... 10045 allow` 可通，但**系统会把该 op 重置回 `ignore`**（实测装包/进程重启后失效），不能作为方案 |
+| 直接 start `LiveWallpaperPreview` | 未导出，`SecurityException: not exported from uid 10091` |
+| 给列表页 `LiveWallpaperActivity` 传 `EXTRA_LIVE_WALLPAPER_COMPONENT` | 仍是列表，不会自动跳到预览（实测 13:09） |
+| 应用内自己应用动态壁纸 `WallpaperManager.setWallpaperComponent()` | **公开 SDK 里不存在**（编译期 `Unresolved reference`），且需要 `SET_WALLPAPER_COMPONENT`（signature\|privileged） |
+
+结论：动态壁纸必须由系统壁纸界面确认后才能生效（Android 的安全设计：动态壁纸会在桌面
+常驻运行代码）。因此在按钮下方加了一行常驻提示，说明"下一步在列表里选哪个"，
+避免用户看到小米画报/支付宝/QQ 的列表时以为点错了：
+
+```
+动态壁纸须由系统界面确认，下一步在列表中选择「灵境动态壁纸」→ 设置壁纸
+```

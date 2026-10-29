@@ -11,7 +11,8 @@
     <string name="preview_caption">OpenGL ES 3.0 · GPU 逐帧计算（非静态图片、非视频）</string>
 
     <string name="entry_set_wallpaper">设置为壁纸</string>
-    <string name="msg_wallpaper_picker_opened">已打开系统动态壁纸设置界面，请在系统界面中确认应用</string>
+    <string name="msg_wallpaper_picker_opened">已打开系统动态壁纸列表，请选择「%1$s」并确认设置</string>
+    <string name="entry_set_wallpaper_hint">动态壁纸须由系统界面确认，下一步在列表中选择「%1$s」→ 设置壁纸</string>
     <string name="msg_wallpaper_picker_failed">当前设备没有可用的动态壁纸设置界面（%1$s）</string>
 
     <string name="section_appearance">天空与天气</string>
