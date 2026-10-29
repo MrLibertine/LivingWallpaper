@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface as MaterialSurface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ fun PreviewScreen(
     val config by configFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val entryLabel = remember(context) { wallpaperEntryLabel(context) }
 
     Column(
         modifier = Modifier
@@ -93,11 +95,13 @@ fun PreviewScreen(
 
         Button(
             onClick = {
-                val failure = openSystemLiveWallpaperPicker(context)
+                // 动态壁纸只能由系统壁纸界面确认后生效，直接打开系统动态壁纸列表
+                // （为什么不能直连预览页，见 [openWallpaperPicker] 注释）
+                val failure = openWallpaperPicker(context)
                 scope.launch {
                     snackbarHostState.showSnackbar(
                         message = if (failure == null) {
-                            context.getString(R.string.msg_wallpaper_picker_opened)
+                            context.getString(R.string.msg_wallpaper_picker_opened, entryLabel)
                         } else {
                             context.getString(R.string.msg_wallpaper_picker_failed, failure)
                         }
@@ -109,6 +113,12 @@ fun PreviewScreen(
         ) {
             Text(text = stringResource(id = R.string.entry_set_wallpaper))
         }
+
+        Text(
+            text = stringResource(id = R.string.entry_set_wallpaper_hint, entryLabel),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         BuildInfoCard()
     }
@@ -145,22 +155,54 @@ private fun GlPreview(configFlow: StateFlow<SceneConfig>, modifier: Modifier = M
 }
 
 /**
- * 打开系统动态壁纸设置界面。返回 null 表示已成功启动，否则返回失败原因。
- * 最终是否应用由用户在系统界面确认，本应用不绕过系统流程。
+ * 打开系统壁纸列表。返回 null 表示已成功启动，否则返回失败原因。
+ *
+ * 为什么只能走列表（详见 docs/development-log.md 第 15 轮）：
+ * 动态壁纸必须由系统壁纸界面确认后才生效——应用无法自己应用
+ * （`WallpaperManager.setWallpaperComponent()` 不在公开 SDK 里，且需要
+ * signature|privileged 权限）；系统的直连预览页 `LiveWallpaperChange` 在 HyperOS 上
+ * 会被 MIUI 私有 app-op 拦下并立即 finish()（logcat: `No permission to change wall paper`），
+ * 而 `LiveWallpaperPreview` 未导出，第三方应用拉不起来。
  */
-private fun openSystemLiveWallpaperPicker(context: Context): String? {
-    val component = ComponentName(context, LivingWallpaperService::class.java)
-    val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-        .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, component)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+private fun openWallpaperPicker(context: Context): String? {
+    var lastError = "no candidate"
+    for (intent in wallpaperListIntents()) {
+        val failure = startActivitySafely(context, intent)
+        if (failure == null) return null
+        lastError = failure
+    }
+    return lastError
+}
+
+/** 系统壁纸列表入口，按可靠性排序（`ACTION_LIVE_WALLPAPER_CHOOSER` 在 HyperOS 上可用）。 */
+private fun wallpaperListIntents(): List<Intent> = listOf(
+    Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER),
+    Intent(Intent.ACTION_SET_WALLPAPER)
+)
+
+/** 启动系统界面，返回 null 表示已成功启动，否则返回失败原因。 */
+private fun startActivitySafely(context: Context, intent: Intent): String? {
     return try {
-        context.startActivity(intent)
+        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         null
     } catch (e: ActivityNotFoundException) {
-        "ActivityNotFoundException"
+        "ActivityNotFoundException: ${intent.action}"
     } catch (e: SecurityException) {
-        "SecurityException: ${e.message}"
+        "SecurityException: ${intent.action} (${e.message})"
     }
+}
+
+/**
+ * 系统壁纸列表里显示的条目名（服务 label），用于提示文案。
+ * 直接读 PackageManager，避免与应用名（App label）不一致造成困惑。
+ */
+private fun wallpaperEntryLabel(context: Context): String {
+    val component = ComponentName(context, LivingWallpaperService::class.java)
+    return runCatching {
+        context.packageManager.getServiceInfo(component, 0)
+            .loadLabel(context.packageManager)
+            .toString()
+    }.getOrDefault(context.getString(R.string.app_name))
 }
 
 @Composable
