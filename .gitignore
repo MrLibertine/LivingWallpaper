@@ -17,3 +17,15 @@ __pycache__/
 *.pyc
 docs/_*.xml
 docs/_dump*.xml
+docs/ui*.xml
+docs/pv.xml
+
+# 验证过程截图：随时可重拍，不入库（README 引用的图单独提交）
+docs/shots/_*.png
+docs/shots/device-*.png
+docs/shots/drop-*.png
+docs/shots/rain-glass-*.png
+docs/shots/city-dusk-*.png
+docs/shots/base-*.png
+docs/shots/meadow-drop-*.png
+docs/shots/shader-preview.png

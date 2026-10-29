@@ -101,7 +101,7 @@ data class SceneConfig(
 }
 
 @Serializable
-enum class SceneType { FOREST, AURORA, STAR_VALLEY }
+enum class SceneType { FOREST, AURORA, STAR_VALLEY, MEADOW }
 
 @Serializable
 enum class WeatherType { CLEAR, RAIN, CLOUDY }
@@ -112,4 +112,5 @@ val SceneType.defaultSceneId: String
         SceneType.FOREST -> "forest-night"
         SceneType.AURORA -> "aurora-lake"
         SceneType.STAR_VALLEY -> "star-valley"
+        SceneType.MEADOW -> "meadow"
     }

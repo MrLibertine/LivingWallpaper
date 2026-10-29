@@ -196,6 +196,13 @@ private fun applicableParams(sceneType: SceneType): List<ParamSpec> = when (scen
         ANIMATION_SPEED_PARAM,
         PARALLAX_PARAM
     )
+    SceneType.MEADOW -> listOf(
+        RAIN_PARAM,
+        WIND_PARAM,
+        LIGHT_PARAM,
+        ANIMATION_SPEED_PARAM,
+        PARALLAX_PARAM
+    )
 }
 
 @Composable

@@ -24,6 +24,8 @@
     <string name="scene_aurora_lake_desc">极光夜空、雪山剪影、湖面倒影、星点闪烁、飘雪、视差</string>
     <string name="scene_star_valley">Star Valley 星空山谷</string>
     <string name="scene_star_valley_desc">夜空、山脉、星星闪烁、流星、缓慢云层</string>
+    <string name="scene_meadow">Sunny Meadow 晴空草地</string>
+    <string name="scene_meadow_desc">隔着挂满雨水的玻璃看阳光下的草原：蓝天白云、草叶光斑，水珠缓慢下爬</string>
     <string name="scene_applied">已切换到 %1$s</string>
 
     <string name="param_rain">雨量</string>

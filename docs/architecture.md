@@ -45,6 +45,7 @@ GLRenderer.start(surface, w, h) ── 创建 GL 线程
 | Forest Night | 天空渐变 → 远山 → 远树 → 中树 → 雨滴 → 萤火虫（加色混合）→ 近树 |
 | Aurora Lake | 极光夜空（星星+两道帘幕）→ 远山 → 中山 → 近山（剪影）→ 湖面（不透明，含天空/雪山倒影）→ 飘雪（加色混合） |
 | Star Valley | 星空+星星+云层 → 远山 → 近山 → 流星（加色混合）→ 雨滴（雨天） |
+| City Dusk | 单次全屏片元着色器完成：照片底图采样 → 玻璃层（下爬的大水滴 + 静态细水珠 + 雨丝），折射体现为对采样点的偏移 |
 
 混合模式：不透明背景关闭 BLEND；剪影与雨滴用 `SRC_ALPHA / ONE_MINUS_SRC_ALPHA`；
 萤火虫与流星用 `SRC_ALPHA / ONE`（加色）。
@@ -68,6 +69,8 @@ GLRenderer.start(surface, w, h) ── 创建 GL 线程
 | SnowSystem | 700 | 缓慢下落 + 正弦横摆，短线段形式，落到画面外回顶部 |
 
 - 运行期不分配对象，只写 `FloatArray`；渲染层每帧一次 `glBufferSubData`。
+- City Dusk 不用这里的任何粒子系统：它的雨丝、水珠、下爬的大水滴全部在
+  `meadow_glass.frag` 里按像素生成，CPU 每帧只更新 `uTime` 等 uniform。
 - 流星的生成按时间积分而非“每帧按槽位掷骰子”，保证与帧率无关（有对应单元测试）。
 - 密度/强度同时受 `PerformanceLevel.particleScale` 与 `reduceMotion` 影响。
 
