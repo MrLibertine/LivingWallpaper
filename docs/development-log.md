@@ -1000,3 +1000,38 @@ float ramp = clamp(0.22 / (segSec * (1.0 - hold)), 0.02, 0.5);  // 起步加速�
 
 **未验证**：GitHub 上的实际运行结果（本地无法执行 Actions），需要推 tag 后看第一次 CI 日志。
 另外 GLSL 仍然只在运行时编译，`assembleRelease` 通过不代表着色器没写错。
+
+
+## 第 23 轮：改用正式签名密钥
+
+第一次自动发版（v0.2.0）跑通了，但把产物下载下来试装时报：
+
+```
+INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match
+```
+
+原因是没配 Secrets 时用的是 **runner 自己生成的 debug keystore**，每台机器、每次运行都不同。
+后果不只是"和本地包装不到一起"：**v0.2.0 和后续任何 CI 版本之间也无法覆盖升级**，
+用户每装一版都要先卸载、丢配置。对"Releases 产物"来说这是硬伤。
+
+**做法**
+
+1. 在仓库外生成密钥库 `D:\LivingWallpaper-keys\release.jks`
+   （PKCS12，RSA 2048，有效期 10000 天，alias `livingwallpaper`）。
+2. 用 `gh secret set` 写入 4 个 Secrets：
+   `RELEASE_KEYSTORE_BASE64` / `RELEASE_KEYSTORE_PASSWORD` / `RELEASE_KEY_ALIAS` / `RELEASE_KEY_PASSWORD`。
+3. 密钥文件不进仓库；Gradle 只读环境变量，`app/build.gradle.kts` 不用改。
+4. README 补了本地用正式密钥构建的方法与证书指纹。
+
+**证书指纹**
+
+```
+DN: CN=Living Wallpaper, O=LivingWallpaper, C=CN
+SHA-256: 62a4093505d243c40f31b5817d27069afe84dfb19a4d7dee801f61a4efb7fc14
+```
+
+**风险提示（已写进 README）**：这个 keystore 必须长期保存。弄丢了就不能再发布
+"能覆盖升级"的版本，只能换包名或让用户卸载重装。
+
+**验证**：本地带 `LW_KEYSTORE_*` 构建，`apksigner verify --print-certs` 输出上面的
+`CN=Living Wallpaper` 指纹（此前是 `CN=Android Debug`），包体仍是 2.84 MB。

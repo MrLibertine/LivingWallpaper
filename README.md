@@ -127,8 +127,9 @@ git push origin v0.2.0
   `versionCode` = 1000 + run 号（保证覆盖安装能升级）
 - `SHA256SUMS.txt` — 安装前可核对
 
-**签名**：仓库未配置密钥时用 **debug 签名**，装得上但不能上架，日志里会有 warning。
-要用正式签名，在仓库 Secrets 里加：
+**签名**：仓库不必存密钥文件，用 Secrets 注入。未配置时退回 **debug 签名**
+（能装但不能上架，而且 runner 每次新建的 debug keystore 都不一样，
+不同版本之间无法覆盖升级）。仓库 Secrets：
 
 | Secret | 内容 |
 |---|---|
@@ -136,6 +137,25 @@ git push origin v0.2.0
 | `RELEASE_KEYSTORE_PASSWORD` | keystore 口令 |
 | `RELEASE_KEY_ALIAS` | 密钥别名 |
 | `RELEASE_KEY_PASSWORD` | 密钥口令 |
+
+当前签名证书（`apksigner verify --print-certs` 可核对）：
+
+```
+DN: CN=Living Wallpaper, O=LivingWallpaper, C=CN
+SHA-256: 62a4093505d243c40f31b5817d27069afe84dfb19a4d7dee801f61a4efb7fc14
+```
+
+本地要用正式密钥构建，把同样的信息放进环境变量即可（密钥文件本身不要进仓库）：
+
+```bash
+export LW_KEYSTORE_PATH=/path/to/release.jks
+export LW_KEYSTORE_PASSWORD=...
+export LW_KEY_ALIAS=livingwallpaper
+export LW_KEY_PASSWORD=...
+./gradlew :app:assembleRelease
+```
+
+**这个 keystore 必须长期保存**：换了密钥，已发布的包就无法覆盖升级（只能卸载重装或用新包名）。
 
 Release 构建开启了 R8（`isMinifyEnabled` / `isShrinkResources`）：不开时 `classes.dex`
 有 40 MB（Material Icons 全量），APK 43 MB；开启后 2.8 MB。
