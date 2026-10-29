@@ -43,10 +43,10 @@ class ShaderLibrary(private val context: Context) {
         const val AURORA_LAKE_FRAG = "shaders/aurora_lake.frag"
         const val STAR_SKY_FRAG = "shaders/star_sky.frag"
 
-        /** 城市暮雨：隔着挂满雨水的玻璃看外面的世界。 */
-        const val CITY_DUSK_FRAG = "shaders/city_dusk_glass.frag"
+        /** 晴空草地：隔着挂满雨水的玻璃看外面的草地与天空。 */
+        const val MEADOW_FRAG = "shaders/meadow_glass.frag"
 
-        /** 城市暮雨的底图：一张照片，玻璃上的水盖在它前面。 */
-        const val CITY_DUSK_BASE = "textures/rain_glass_bg.jpg"
+        /** 晴空草地的底图：一张照片，玻璃上的水盖在它前面。 */
+        const val MEADOW_BASE = "textures/meadow_bg.jpg"
     }
 }

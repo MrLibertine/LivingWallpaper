@@ -4,7 +4,7 @@
 真机行为仍然以设备截图为准（这里用的是桌面 GL 3.3，GLSL ES 3.0 源码做了最小改写）。
 
 用法：
-    python docs/shader_preview.py shaders/city_dusk_glass.frag [输出.png] [宽] [高] [时间秒]
+    python docs/shader_preview.py shaders/meadow_glass.frag [输出.png] [宽] [高] [时间秒]
 参数异常时默认 1080x2400（与手机一致）。
 给不同的时间秒数可以渲染多帧，用来确认"画面真的在动"。
 
@@ -20,7 +20,7 @@ import moderngl
 import numpy as np
 from PIL import Image
 
-DEFAULT_FRAG = "shaders/city_dusk_glass.frag"
+DEFAULT_FRAG = "shaders/meadow_glass.frag"
 VERT = """
 #version 330 core
 layout(location = 0) in vec2 aPosition;
@@ -88,11 +88,11 @@ def uniform_value(gl_type: str):
 
 def find_base_image(frag_path: Path) -> Path | None:
     """定位底图：着色器放在 assets/shaders/ 下，底图固定在 assets/textures/。"""
-    guess = frag_path.parent.parent / "textures" / "rain_glass_bg.jpg"
+    guess = frag_path.parent.parent / "textures" / "meadow_bg.jpg"
     if guess.exists():
         return guess
     root = Path(__file__).resolve().parents[1]
-    guess = root / "renderer/src/main/assets/textures/rain_glass_bg.jpg"
+    guess = root / "renderer/src/main/assets/textures/meadow_bg.jpg"
     return guess if guess.exists() else None
 
 
@@ -120,13 +120,13 @@ def run(frag_path: Path, out_path: Path, width: int, height: int, time_s: float)
     if "uTime" in program:
         program["uTime"].value = float(time_s)
 
-    # 贴图：着色器里声明了 uBase 就把同目录上层的 textures/rain_glass_bg.jpg 挂上去，
+    # 贴图：着色器里声明了 uBase 就把同目录上层的 textures/meadow_bg.jpg 挂上去，
     # 采样方向与 App 的 GLUtils.texImage2D 一致（图片第一行 = 纹理 v=0）
     base_texture = None
     if "uBase" in program:
         base_path = find_base_image(frag_path)
         if base_path is None:
-            raise SystemExit("着色器需要 uBase，但没找到底图 textures/rain_glass_bg.jpg")
+            raise SystemExit("着色器需要 uBase，但没找到底图 textures/meadow_bg.jpg")
         base_image = Image.open(base_path).convert("RGB")
         base_texture = ctx.texture(base_image.size, 3, base_image.tobytes())
         base_texture.build_mipmaps()

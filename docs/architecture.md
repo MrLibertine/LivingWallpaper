@@ -70,7 +70,7 @@ GLRenderer.start(surface, w, h) ── 创建 GL 线程
 
 - 运行期不分配对象，只写 `FloatArray`；渲染层每帧一次 `glBufferSubData`。
 - City Dusk 不用这里的任何粒子系统：它的雨丝、水珠、下爬的大水滴全部在
-  `city_dusk_glass.frag` 里按像素生成，CPU 每帧只更新 `uTime` 等 uniform。
+  `meadow_glass.frag` 里按像素生成，CPU 每帧只更新 `uTime` 等 uniform。
 - 流星的生成按时间积分而非“每帧按槽位掷骰子”，保证与帧率无关（有对应单元测试）。
 - 密度/强度同时受 `PerformanceLevel.particleScale` 与 `reduceMotion` 影响。
 

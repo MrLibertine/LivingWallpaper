@@ -196,7 +196,7 @@ private fun applicableParams(sceneType: SceneType): List<ParamSpec> = when (scen
         ANIMATION_SPEED_PARAM,
         PARALLAX_PARAM
     )
-    SceneType.CITY_DUSK -> listOf(
+    SceneType.MEADOW -> listOf(
         RAIN_PARAM,
         WIND_PARAM,
         LIGHT_PARAM,

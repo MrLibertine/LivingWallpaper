@@ -798,3 +798,32 @@ W/CHANGE_LIVE_WALLPAPER(24475): No permission to change wall paper
   着色器是单次全屏采样 + 3 层水道循环，理论上比三场景更轻，但没有实测数据就不下结论。
 - 长按 / 锁屏 / 旋转等生命周期沿用既有实现，本轮未单独回归。
 - 底图是固定照片，不做时间/天气联动；`uRain` 只改变水珠多少，不改照片内容。
+
+
+## 第 17 轮：场景改名 City Dusk → Sunny Meadow
+
+用户反馈：底图是蓝天白云与草地，不是城市，名字对不上画面。
+
+改名范围（全链路一致，避免代码里仍叫"城市"）：
+
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| 显示名 | City Dusk 城市暮雨 | Sunny Meadow 晴空草地 |
+| 枚举 | `SceneType.CITY_DUSK` | `SceneType.MEADOW` |
+| 持久化 key | `city-dusk` | `meadow` |
+| 场景类 | `CityDuskScene` | `MeadowScene` |
+| 着色器 | `city_dusk_glass.frag` | `meadow_glass.frag` |
+| 底图 | `rain_glass_bg.jpg` | `meadow_bg.jpg` |
+| 常量 | `CITY_DUSK_FRAG` / `CITY_DUSK_BASE` | `MEADOW_FRAG` / `MEADOW_BASE` |
+| 字符串资源 | `scene_city_dusk(_desc)` | `scene_meadow(_desc)` |
+
+文件用 `git mv` 重命名，保留历史。第 16 轮的记录按当时状态原样保留（其中出现的旧名字是历史事实）。
+
+**影响**：持久化 key 变了，升级前已保存为 `city-dusk` 的配置读不到，会回退到默认场景（森林雨夜）。
+开发期可接受，未做旧 key 的兼容别名。
+
+**顺带修正**：`meadow_glass.frag` 头部注释仍写着"位置用 τ - a·sin(2πkτ)"，
+而那正是第 16 轮被判为会导致回弹的写法；改为"位移由速度曲线 speed = 1 - A·cos(2πkτ) 积分而来"。
+
+**验证**：`:app:assembleDebug` 通过；`testDebugUnitTest`（全模块）106 用例 0 失败；
+`:app:lintDebug` `No issues found.`；装机后场景库与壁纸画面正常。

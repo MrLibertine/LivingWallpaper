@@ -15,9 +15,9 @@ import com.livingwallpaper.renderer.gl.ShaderProgram
 import com.livingwallpaper.renderer.scene.layer.FullscreenLayer
 
 /**
- * City Dusk 城市暮雨。
+ * Sunny Meadow 晴空草地。
  *
- * 底图是一张照片（assets/textures/rain_glass_bg.jpg），画面颜色全部由它决定；
+ * 底图是一张照片（assets/textures/meadow_bg.jpg），画面颜色全部由它决定：
  * 着色器只负责在照片前面加一层挂满雨水的玻璃：
  *
  * 1. 大水滴往下爬，头上一枚凸透镜把照片揉弯，身后拖一条水痕；
@@ -27,7 +27,7 @@ import com.livingwallpaper.renderer.scene.layer.FullscreenLayer
  * 贴图在 GL 线程首次 initialize 时上传，mipmap 由 GL 生成；
  * 片元着色器只做一次采样，所有折射都靠在采样点上做偏移。
  */
-class CityDuskScene(private val shaders: ShaderLibrary) : Scene, ParallaxAware {
+class MeadowScene(private val shaders: ShaderLibrary) : Scene, ParallaxAware {
 
     private var config: SceneConfig = SceneConfig.DEFAULT.clamped()
 
@@ -54,7 +54,7 @@ class CityDuskScene(private val shaders: ShaderLibrary) : Scene, ParallaxAware {
     override fun initialize() {
         glassLayer = FullscreenLayer(
             shaders.source(ShaderLibrary.FULLSCREEN_VERT),
-            shaders.source(ShaderLibrary.CITY_DUSK_FRAG)
+            shaders.source(ShaderLibrary.MEADOW_FRAG)
         ).also { it.initialize() }
 
         baseTexture = uploadBaseTexture()
@@ -149,9 +149,9 @@ class CityDuskScene(private val shaders: ShaderLibrary) : Scene, ParallaxAware {
 
     /** 上传底图。读不到就退化为纯黑底（不崩，只是画面没有内容）。 */
     private fun uploadBaseTexture(): Int {
-        val bitmap: Bitmap? = shaders.bitmap(ShaderLibrary.CITY_DUSK_BASE)
+        val bitmap: Bitmap? = shaders.bitmap(ShaderLibrary.MEADOW_BASE)
         if (bitmap == null) {
-            Log.w(TAG, "底图缺失：${ShaderLibrary.CITY_DUSK_BASE}")
+            Log.w(TAG, "底图缺失：${ShaderLibrary.MEADOW_BASE}")
             return 0
         }
         baseWidth = bitmap.width
@@ -203,7 +203,7 @@ class CityDuskScene(private val shaders: ShaderLibrary) : Scene, ParallaxAware {
         )
 
     private companion object {
-        private const val TAG = "CityDuskScene"
+        private const val TAG = "MeadowScene"
         private const val U_TIME = "uTime"
         private const val U_OFFSET = "uOffset"
         private const val U_BASE = "uBase"

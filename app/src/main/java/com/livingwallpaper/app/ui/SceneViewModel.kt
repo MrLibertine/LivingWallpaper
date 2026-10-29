@@ -121,7 +121,7 @@ internal val SceneType.displayNameRes: Int
         SceneType.FOREST -> com.livingwallpaper.app.R.string.scene_forest_night
         SceneType.AURORA -> com.livingwallpaper.app.R.string.scene_aurora_lake
         SceneType.STAR_VALLEY -> com.livingwallpaper.app.R.string.scene_star_valley
-        SceneType.CITY_DUSK -> com.livingwallpaper.app.R.string.scene_city_dusk
+        SceneType.MEADOW -> com.livingwallpaper.app.R.string.scene_meadow
     }
 
 internal val SceneType.descriptionRes: Int
@@ -129,5 +129,5 @@ internal val SceneType.descriptionRes: Int
         SceneType.FOREST -> com.livingwallpaper.app.R.string.scene_forest_night_desc
         SceneType.AURORA -> com.livingwallpaper.app.R.string.scene_aurora_lake_desc
         SceneType.STAR_VALLEY -> com.livingwallpaper.app.R.string.scene_star_valley_desc
-        SceneType.CITY_DUSK -> com.livingwallpaper.app.R.string.scene_city_dusk_desc
+        SceneType.MEADOW -> com.livingwallpaper.app.R.string.scene_meadow_desc
     }
