@@ -31,6 +31,7 @@ class EGLManager {
     private var display: EGLDisplay = EGL14.EGL_NO_DISPLAY
     private var context: EGLContext = EGL14.EGL_NO_CONTEXT
     private var windowSurface: EGLSurface = EGL14.EGL_NO_SURFACE
+    private var config: EGLConfig? = null
 
     val isInitialized: Boolean
         get() = display != EGL14.EGL_NO_DISPLAY &&
@@ -61,6 +62,7 @@ class EGLManager {
             release()
             return false
         }
+        this.config = config
 
         val contextAttribs = intArrayOf(EGL_CONTEXT_CLIENT_VERSION, 3, EGL14.EGL_NONE)
         context = EGL14.eglCreateContext(display, config, EGL14.EGL_NO_CONTEXT, contextAttribs, 0)
@@ -85,6 +87,49 @@ class EGLManager {
         }
 
         Log.i(TAG, "EGL initialized: ${querySurfaceSize()}")
+        return true
+    }
+
+    /**
+     * 重建窗口表面（保留 Display 与 Context）。
+     *
+     * 窗口表面会随壁纸窗口尺寸/生命周期变化而失效（`eglSwapBuffers` 返回 false），
+     * 此时不能直接结束渲染线程，否则壁纸会冻结在最后一帧（视觉上表现为画面停住、
+     * 甚至只剩半屏）。这里销毁旧的窗口表面，用同一个 Context 重新绑定。
+     */
+    fun recreateWindowSurface(surface: Surface): Boolean {
+        val currentConfig = config
+        if (display == EGL14.EGL_NO_DISPLAY || context == EGL14.EGL_NO_CONTEXT || currentConfig == null) {
+            return false
+        }
+        EGL14.eglMakeCurrent(
+            display,
+            EGL14.EGL_NO_SURFACE,
+            EGL14.EGL_NO_SURFACE,
+            EGL14.EGL_NO_CONTEXT
+        )
+        if (windowSurface != EGL14.EGL_NO_SURFACE) {
+            EGL14.eglDestroySurface(display, windowSurface)
+            windowSurface = EGL14.EGL_NO_SURFACE
+        }
+        windowSurface = EGL14.eglCreateWindowSurface(
+            display,
+            currentConfig,
+            surface,
+            intArrayOf(EGL14.EGL_NONE),
+            0
+        )
+        if (windowSurface == EGL14.EGL_NO_SURFACE) {
+            logFailure("eglCreateWindowSurface(recreate)")
+            return false
+        }
+        if (!EGL14.eglMakeCurrent(display, windowSurface, windowSurface, context)) {
+            logFailure("eglMakeCurrent(recreate)")
+            EGL14.eglDestroySurface(display, windowSurface)
+            windowSurface = EGL14.EGL_NO_SURFACE
+            return false
+        }
+        Log.i(TAG, "EGL window surface 已重建: ${querySurfaceSize()}")
         return true
     }
 
@@ -150,6 +195,7 @@ class EGLManager {
         }
         windowSurface = EGL14.EGL_NO_SURFACE
         context = EGL14.EGL_NO_CONTEXT
+        config = null
         display = EGL14.EGL_NO_DISPLAY
     }
 

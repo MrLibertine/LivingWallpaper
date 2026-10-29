@@ -50,6 +50,10 @@ class LivingWallpaperService : WallpaperService() {
             super.onSurfaceCreated(holder)
             Log.i(TAG, "onSurfaceCreated")
 
+            // 系统在部分场景会先重建 Surface 再回调 onSurfaceDestroyed（回调顺序不保证），
+            // 这里先停掉上一轮渲染，避免两个 GL 线程同时向窗口提交画面。
+            stopRendering()
+
             val repository = SceneRepositoryProvider.get(applicationContext)
             this.repository = repository
             val initial = repository.snapshot()
