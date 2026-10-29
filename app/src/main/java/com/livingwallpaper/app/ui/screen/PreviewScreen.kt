@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -71,6 +71,10 @@ fun PreviewScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
 
+        // 预览必须按壁纸真实比例（9:19.5）渲染。
+        // 横向 4:3 卡片里跑出来的画面和真机壁纸不是一回事：
+        // 着色器按"等比空间"布点，视野越宽光斑越多，横屏下密度会翻好几倍，
+        // 让人以为壁纸就是这样。
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF0B1626))
@@ -78,20 +82,25 @@ fun PreviewScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                GlPreview(configFlow = configFlow)
-                Text(
-                    text = stringResource(id = R.string.preview_caption),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFB9C7DA),
+                Box(
                     modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(12.dp)
-                )
+                        .fillMaxWidth(0.52f)
+                        .aspectRatio(9f / 19.5f)
+                        .clip(RoundedCornerShape(14.dp))
+                ) {
+                    GlPreview(configFlow = configFlow)
+                }
             }
         }
+
+        Text(
+            text = stringResource(id = R.string.preview_caption),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Button(
             onClick = {

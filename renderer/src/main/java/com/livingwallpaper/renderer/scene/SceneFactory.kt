@@ -21,10 +21,13 @@ object SceneFactory {
 
     fun createStarValley(context: Context): Scene = StarValleyScene(ShaderLibrary(context))
 
+    fun createCityDusk(context: Context): Scene = CityDuskScene(ShaderLibrary(context))
+
     fun create(type: SceneType, context: Context): Scene = when (type) {
         SceneType.FOREST -> createForest(context)
         SceneType.AURORA -> createAurora(context)
         SceneType.STAR_VALLEY -> createStarValley(context)
+        SceneType.CITY_DUSK -> createCityDusk(context)
     }
 
     /** 当前默认场景（P3 起为森林雨夜）。 */

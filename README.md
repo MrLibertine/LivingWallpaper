@@ -21,6 +21,7 @@
 | Forest Night 森林雨夜 | 已实现 | 夜空渐变、远山、三层森林景深、雨滴、萤火虫、风吹树木、视差 |
 | Aurora Lake 极光雪山湖 | 已实现 | 极光帘幕与星空、三层雪山剪影、湖面倒影与波光、飘雪 |
 | Star Valley 星空山谷 | 已实现 | 星空闪烁、远/近山体、流星、缓慢云层 |
+| City Dusk 城市暮雨 | 已实现（真机验证） | 隔着挂满雨水的玻璃看外面：照片底图 + GLSL 水珠/水滴/雨丝与折射、视差 |
 | 场景切换 | 已实现 | 场景库选择后，App 预览与系统壁纸同步切换 |
 | 参数编辑器 | 已实现 | 天气、天空颜色、雨量、风速、光照、动画速度、视差、粒子密度、帧率 |
 | 配置持久化 | 已实现 | DataStore Preferences，进程内单例供 UI 与壁纸共享 |
@@ -38,7 +39,8 @@
   `AIProvider` 接口已预留，接入真实模型只需新增一个实现。
 - 云端代理 / API Key 管理 / 提示词注入防护。
 - 云端 A/B 实验、场景下载商城、用户账户体系、埋点与合规隐私中心。
-- 反射、折射、PBR 材质、Bloom、真实阴影。
+- 物理求解的反射/折射、PBR 材质、Bloom、真实阴影。
+  （City Dusk 的水珠折射是对底图采样点的偏移近似，不是光线追踪或厚度模型。）
 - 本地 benchmark **模块**（Gradle 模块 + 基线对比）。目前是 `docs/measure_perf.py` 脚本，
   能自动采集 FPS 与 PSS，但没有做基线回归与 CI 门禁。
 - 真实天气联动、AI 场景导演（时间轴关键帧）、iOS 展示端。
@@ -50,7 +52,7 @@
 
 **已验证：**
 
-- APK 安装、冷启动、首页与三个场景的实际画面 —— 通过
+- APK 安装、冷启动、首页与四个场景的实际画面 —— 通过
 - 系统动态壁纸设置（壁纸选择器 → 预览 → 应用），桌面实时渲染 —— 通过
 - 场景切换、参数滑块实时影响画面 —— 通过
 - `force-stop` 后重新设置壁纸，配置与场景保持 —— 通过
@@ -134,7 +136,7 @@ gradlew.bat :app:assembleDebug
 app/            Compose UI：预览 / 场景库 / 参数 / AI 创造 / 性能
 core/model/     SceneConfig、SceneType、WeatherType、PerformanceLevel、SkyColor
 core/data/      SceneRepository（DataStore 实现）与进程内单例
-renderer/       gl（EGL/Shader/Mesh/渲染线程）、scene（三个场景与图层）、
+renderer/       gl（EGL/Shader/Mesh/渲染线程）、scene（四个场景与图层）、
                 particle（雨滴/萤火虫/流星/雪花）、animation（风/视差）、
                 performance（渲染统计）、geometry（山脉/树木网格）
 wallpaper/      LivingWallpaperService、ParallaxSensor
